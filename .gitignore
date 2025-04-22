@@ -18,6 +18,7 @@ lib/
 lib64/
 parts/
 sdist/
+src/
 var/
 wheels/
 share/python-wheels/
@@ -172,3 +173,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+mkl.config.yml

@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+import os
+import shutil
+import argparse
+import yaml
+import http.server
+import socketserver
+import webbrowser
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from core.mukurol import MukuroL  # MukuroLクラスのインポート
+from bs4 import BeautifulSoup
+import threading
+
+# デフォルト設定
+DEFAULT_SRC_DIR = "src"
+DEFAULT_DIST_DIR = "dist"
+DEFAULT_CONFIG_FILE = "mkl.config.yml"
+DEFAULT_PORT = 6961
+
+class MKLHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, mukurol=None, **kwargs):
+        self.mukurol = mukurol
+        super().__init__(*args, directory=DEFAULT_DIST_DIR, **kwargs)
+
+    def do_GET(self):
+        print(f"Request for: {self.path}")
+        # リクエストされたファイルがdistディレクトリにあるか確認
+        filepath = os.path.join(DEFAULT_DIST_DIR, self.path.lstrip("/"))
+        if os.path.exists(filepath):
+            # ファイルを読み込む
+            with open(filepath, "r") as f:
+                html = f.read()
+
+            # HTMLをレスポンスとして返す
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(html.encode())
+        else:
+            # 404エラーを返す
+            self.send_response(404)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<html><body><h1>404 Not Found</h1></body></html>")
+
+class MKLFileHandler(FileSystemEventHandler):
+    def __init__(self, src_dir, dist_dir, mukurol):
+        self.src_dir = src_dir
+        self.dist_dir = dist_dir
+        self.mukurol = mukurol
+
+    def on_modified(self, event):
+        if event.event_type == 'modified' and event.src_path.endswith(".mkl"):
+            print(f"File {event.src_path} has been modified. Generating HTML...")
+            self.generate_html(event.src_path)
+            print("HTML generated. Refresh your browser.")
+
+    def generate_html(self, src_file):
+        # ファイル名から出力ファイル名を決定
+        base_name = os.path.basename(src_file).replace(".mkl", ".html")
+        dist_file = os.path.join(self.dist_dir, base_name)
+
+        try:
+            with open(src_file, "r") as f:
+                mukurol_text = f.read()
+            html = self.mukurol.generate_html(mukurol_text)
+            soup = BeautifulSoup(html, 'html.parser')
+            pretty_html = soup.prettify()
+            with open(dist_file, "w") as f:
+                f.write(pretty_html)
+        except Exception as e:
+            print(f"Error generating HTML for {src_file}: {e}")
+
+def init_command(path):
+    """
+    指定のディレクトリに、src, distディレクトリと、空のmkl.config.ymlを作成します。
+    """
+    src_path = os.path.join(path, DEFAULT_SRC_DIR)
+    dist_path = os.path.join(path, DEFAULT_DIST_DIR)
+    config_path = os.path.join(path, DEFAULT_CONFIG_FILE)
+
+    os.makedirs(src_path, exist_ok=True)
+    os.makedirs(dist_path, exist_ok=True)
+
+    with open(config_path, "w") as f:
+        yaml.dump({}, f)  # 空のYAMLファイルを作成
+
+    print(f"Initialized MukuroL project in {path}")
+    print(f"  - Created directory: {src_path}")
+    print(f"  - Created directory: {dist_path}")
+    print(f"  - Created file: {config_path}")
+
+def generate_command(input_file=None, output_file=None):
+    """
+    指定のソースファイルから、出力先ファイルにHTMLファイルを作成します。
+    未指定の場合は、srcディレクトリのファイル全てからdistディレクトリに結果を吐き出します。
+    """
+    mukurol = MukuroL()  # MukuroLクラスのインスタンスを作成
+
+    if input_file:
+        # 単一ファイルの処理
+        src_file = input_file
+        if not output_file:
+            # 出力ファイル名が未指定の場合は、デフォルトのdistディレクトリに出力
+            base_name = os.path.basename(src_file).replace(".mkl", ".html")
+            output_file = os.path.join(DEFAULT_DIST_DIR, base_name)
+
+        try:
+            with open(src_file, "r") as f:
+                mukurol_text = f.read()
+            html = mukurol.generate_html(mukurol_text)
+            with open(output_file, "w") as f:
+                f.write(html)
+            print(f"Generated HTML from {src_file} to {output_file}")
+        except Exception as e:
+            print(f"Error generating HTML for {src_file}: {e}")
+
+    else:
+        # srcディレクトリのファイルを全て処理
+        src_dir = DEFAULT_SRC_DIR
+        dist_dir = DEFAULT_DIST_DIR
+
+        if not os.path.exists(src_dir):
+            print(f"Error: Source directory '{src_dir}' not found.")
+            return
+
+        os.makedirs(dist_dir, exist_ok=True)
+
+        for filename in os.listdir(src_dir):
+            if filename.endswith(".mkl"):
+                src_file = os.path.join(src_dir, filename)
+                base_name = filename.replace(".mkl", ".html")
+                dist_file = os.path.join(dist_dir, base_name)
+
+                try:
+                    with open(src_file, "r") as f:
+                        mukurol_text = f.read()
+                    html = mukurol.generate_html(mukurol_text)
+                    with open(dist_file, "w") as f:
+                        f.write(html)
+                    print(f"Generated HTML from {src_file} to {dist_file}")
+                except Exception as e:
+                    print(f"Error generating HTML for {src_file}: {e}")
+
+def serve_command(watch=False, port=DEFAULT_PORT):
+    """
+    ビルドインサーバを起動し、ブラウザを開いて指定ポートにアクセスさせます。
+    src内のmklファイルを監視し、更新があった場合は、そのmklファイルからHTMLを生成し、ブラウザに表示します。
+    """
+    src_dir = DEFAULT_SRC_DIR
+    dist_dir = DEFAULT_DIST_DIR
+
+    if not os.path.exists(src_dir):
+        print(f"Error: Source directory '{src_dir}' not found.")
+        return
+
+    os.makedirs(dist_dir, exist_ok=True)
+
+    mukurol = MukuroL()  # MukuroLクラスのインスタンスを作成
+
+    # 初期HTMLファイルを生成
+    for filename in os.listdir(src_dir):
+        if filename.endswith(".mkl"):
+            src_file = os.path.join(src_dir, filename)
+            MKLFileHandler(src_dir, dist_dir, mukurol).generate_html(src_file)
+
+    # HTTPサーバの設定
+    handler = lambda *args, **kwargs: MKLHandler(*args, mukurol=mukurol, **kwargs)
+
+    try:
+        with socketserver.TCPServer(("", port), handler) as httpd:
+            print(f"Serving at port {port}")
+
+            if watch:
+                # ファイル監視の設定
+                event_handler = MKLFileHandler(src_dir, dist_dir, mukurol)
+                observer = Observer()
+                observer.schedule(event_handler, src_dir, recursive=True)
+                observer.start()
+
+                # 別のスレッドでHTTPサーバーを起動
+                def serve_thread():
+                    httpd.serve_forever()
+
+                thread = threading.Thread(target=serve_thread)
+                thread.daemon = True  # メインスレッドが終了したら、このスレッドも終了
+                thread.start()
+
+                # ブラウザを開く
+                webbrowser.open(f"http://localhost:{port}/sample.html")  # sample.htmlをデフォルトで開く
+
+                try:
+                    while True:
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    observer.stop()
+                observer.join()
+            else:
+                httpd.serve_forever()
+
+                # ブラウザを開く
+                webbrowser.open(f"http://localhost:{port}/sample.html")  # sample.htmlをデフォルトで開く
+
+    except OSError as e:
+        print(f"Error: Could not start server on port {port}. Port may be in use.")
+    except Exception as e:
+        print(f"Error starting server: {e}")
+
+def main():
+    parser = argparse.ArgumentParser(description="MukuroL CLI tool")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # init コマンド
+    init_parser = subparsers.add_parser("init", help="Initialize a new MukuroL project")
+    init_parser.add_argument("path", help="Path to the project directory")
+
+    # generate コマンド
+    generate_parser = subparsers.add_parser("generate", help="Generate HTML from MKL files")
+    generate_parser.add_argument("-i", "--input", dest="input_file", help="Path to the input MKL file")
+    generate_parser.add_argument("-o", "--output", dest="output_file", help="Path to the output HTML file")
+
+    # serve コマンド
+    serve_parser = subparsers.add_parser("serve", help="Start a local development server")
+    serve_parser.add_argument("--watch", action="store_true", help="Watch for changes in the source directory and automatically regenerate HTML")
+    serve_parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"Port number to listen on (default: {DEFAULT_PORT})")
+
+    args = parser.parse_args()
+
+    if args.command == "init":
+        init_command(args.path)
+    elif args.command == "generate":
+        generate_command(args.input_file, args.output_file)
+    elif args.command == "serve":
+        serve_command(args.watch, args.port)
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
