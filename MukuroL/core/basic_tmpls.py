@@ -287,6 +287,17 @@ def box_size(p):
         # それ以外の形式はエラー
         raise ValueError(f"Invalid size format: {p}")
 
+def box_scroll(p):
+    if p == "x":
+        return "overflow-x: scroll;"
+    elif p == "y":
+        return "overflow-y: scroll;"
+    elif p == "both":
+        return "overflow: scroll;"
+    else:
+        # それ以外の形式はエラー
+        raise ValueError(f"Invalid scroll format: {p}")
+
 basic_methods = {
     "grid_size": grid_size,
     "grid_tile": grid_tile,
@@ -302,4 +313,7 @@ basic_methods = {
     "flex_basis": flex_basis,
     "box_size": box_size,
     "box_gpos": box_gpos,
+    "box_gcol": box_gcol,
+    "box_grow": box_grow,
+    "box_scroll": box_scroll,
 }
