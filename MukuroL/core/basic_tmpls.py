@@ -102,7 +102,7 @@ basic_tmpls = {
 <div 
   {% if data.id %}id='{{data.id}}'{% endif %}
   {% if data.class %}class='{{data.class}}'{% endif %}
-  {% if data.style %}style='display:grid;{{data.style}}'{% endif %}>
+  {% if data.style %}style='display:grid;width:100%;height:100%;{{data.style}}'{% endif %}>
 
   {% if data.label %}<div class="box-label">{{data.label}}</div>{% endif %}
   {% if data.text %}<p>{{data.text}}</p>{% endif %}
