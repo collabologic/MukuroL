@@ -27,7 +27,64 @@ basic_tmpls = {
 </div>
 
 """,
-    "flex":"""\
+"textfield": """\
+{% if data.label %}<label for="{{data.id}}">{{data.label}}</label>{% endif %}
+<input type="text" 
+  {% if data.id %}id='{{data.id}}'{% endif %}
+  class='box {% if data.class %}{{data.class}}{% endif %}'
+  {% if data.style %}style='{{data.style}}'{% endif %}
+  {% if data.text %}placeholder="{{data.text}}"{% endif %}
+  {% if data.cols %}size="{{data.cols}}"{% endif %}/>
+
+""",
+"textarea": """\
+{% if data.label %}<label for="{{data.id}}">{{data.label}}</label>{% endif %}
+<textarea
+  {% if data.id %}id='{{data.id}}'{% endif %}
+  class='box {% if data.class %}{{data.class}}{% endif %}'
+  {% if data.style %}style='{{data.style}}'{% endif %}
+  {% if data.text %}placeholder="{{data.text}}"{% endif %}
+  {% if data.cols %}cols="{{data.cols}}"{% endif %}
+  {% if data.rows %}rows="{{data.rows}}"{% endif %}/>
+    
+""",
+"select": """\
+{% if data.label %}<label for="{{data.id}}">{{data.label}}</label>{% endif %}
+<select
+  {% if data.id %}id='{{data.id}}'{% endif %}
+  class='box {% if data.class %}{{data.class}}{% endif %}'
+  {% if data.style %}style='{{data.style}}'{% endif %}>
+  {% if data.text %}<option value="">{{data.text}}</option>{% endif %}
+</select>
+
+""",
+"radio": """\
+<input type="radio"
+  {% if data.id %}id='{{data.id}}'{% endif %}
+  class='box {% if data.class %}{{data.class}}{% endif %}'
+  {% if data.style %}style='{{data.style}}'{% endif %}
+  {% if data.cols %}size="{{data.cols}}"{% endif %}/>
+<label for="{{data.id}}">{{data.label}}</label>
+
+""",
+"checkbox": """\
+<input type="checkbox"
+  {% if data.id %}id='{{data.id}}'{% endif %}
+  class='box {% if data.class %}{{data.class}}{% endif %}'
+  {% if data.style %}style='{{data.style}}'{% endif %} />
+<label for="{{data.id}}">{{data.label}}</label>
+
+""",
+"button": """\
+<button
+  {% if data.id %}id='{{data.id}}'{% endif %}
+  class='box {% if data.class %}{{data.class}}{% endif %}'
+  {% if data.style %}style='{{data.style}}'{% endif %}>
+  {% if data.label %}{{data.label}}{% endif %}
+</button>
+
+""",
+"flex":"""\
 <div 
   {% if data.id %}id='{{data.id}}'{% endif %}
   {% if data.class %}class='flex {{data.class}}'{% endif %}
