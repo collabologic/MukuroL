@@ -12,6 +12,7 @@ from watchdog.events import FileSystemEventHandler
 from core.mukurol import MukuroL  # MukuroLクラスのインポート
 from bs4 import BeautifulSoup
 import threading
+import traceback
 
 # デフォルト設定
 DEFAULT_SRC_DIR = "src"
@@ -65,13 +66,14 @@ class MKLFileHandler(FileSystemEventHandler):
         try:
             with open(src_file, "r") as f:
                 mukurol_text = f.read()
-            html = self.mukurol.generate_html(mukurol_text)
+            html, _ = self.mukurol.generate_html(mukurol_text)
             soup = BeautifulSoup(html, 'html.parser')
             pretty_html = soup.prettify()
             with open(dist_file, "w") as f:
                 f.write(pretty_html)
         except Exception as e:
             print(f"Error generating HTML for {src_file}: {e}")
+            traceback.print_exc()
 
 def init_command(path):
     """
@@ -110,12 +112,13 @@ def generate_command(input_file=None, output_file=None):
         try:
             with open(src_file, "r") as f:
                 mukurol_text = f.read()
-            html = mukurol.generate_html(mukurol_text)
+            html, _ = mukurol.generate_html(mukurol_text)
             with open(output_file, "w") as f:
-                f.write(html)
+                f.write(str(html))
             print(f"Generated HTML from {src_file} to {output_file}")
         except Exception as e:
             print(f"Error generating HTML for {src_file}: {e}")
+            traceback.print_exc()
 
     else:
         # srcディレクトリのファイルを全て処理
@@ -137,12 +140,14 @@ def generate_command(input_file=None, output_file=None):
                 try:
                     with open(src_file, "r") as f:
                         mukurol_text = f.read()
-                    html = mukurol.generate_html(mukurol_text)
+                    html, description = mukurol.generate_html(mukurol_text)
                     with open(dist_file, "w") as f:
-                        f.write(html)
+                        f.write(str(html))
                     print(f"Generated HTML from {src_file} to {dist_file}")
                 except Exception as e:
                     print(f"Error generating HTML for {src_file}: {e}")
+                    traceback.print_exc()
+    
 
 def serve_command(watch=False, port=DEFAULT_PORT):
     """

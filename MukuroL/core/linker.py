@@ -5,6 +5,7 @@ TreeNodeに含まれるrefを処理する
     partsにはrefは使えない
     ref欄はparts内の記述に差し替える
 """
+from pprint import pprint
 def divide(root):
     """
     TreeNodeを受け取り、partsとpageとimportに分ける
@@ -14,6 +15,7 @@ def divide(root):
     """
     parts = None
     page = None
+    description = None
     for child in root.children:
         if child.value[0] == "parts":
             parts = child.children
@@ -23,9 +25,11 @@ def divide(root):
         elif child.value[0] == "import":
             # importノードは無視する
             continue
+        elif child.value[0] == "description":
+            description = "\n".join([" ".join(c.value) for c in child.children])
         else:
             raise ValueError(f"Unknown node type: {child.value[0]}")
-    return parts, page[0] if page else None
+    return parts, page[0] if page else None, description if description else None
 
 def linking(current, parts): 
     # refノードであった場合、partsディレクティブ内からキーに対応するパーツを探す
