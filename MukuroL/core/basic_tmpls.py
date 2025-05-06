@@ -45,7 +45,7 @@ basic_tmpls = {
   {% if data.style %}style='{{data.style}}'{% endif %}
   {% if data.text %}placeholder="{{data.text}}"{% endif %}
   {% if data.cols %}cols="{{data.cols}}"{% endif %}
-  {% if data.rows %}rows="{{data.rows}}"{% endif %}/>
+  {% if data.rows %}rows="{{data.rows}}"{% endif %} ></textarea>
     
 """,
 "select": """\

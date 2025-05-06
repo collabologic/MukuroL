@@ -62,15 +62,23 @@ class MKLFileHandler(FileSystemEventHandler):
         # ファイル名から出力ファイル名を決定
         base_name = os.path.basename(src_file).replace(".mkl", ".html")
         dist_file = os.path.join(self.dist_dir, base_name)
+        # descriptionファイル名
+        desc_file = dist_file.replace(".html", ".md.html")
 
         try:
             with open(src_file, "r") as f:
                 mukurol_text = f.read()
-            html, _ = self.mukurol.generate_html(mukurol_text)
-            soup = BeautifulSoup(html, 'html.parser')
-            pretty_html = soup.prettify()
-            with open(dist_file, "w") as f:
-                f.write(pretty_html)
+            layout_html, description_html = self.mukurol.generate_html(mukurol_text)
+            # レイアウトHTMLをファイルに出力
+            #soup = BeautifulSoup(layout_html, 'html.parser')
+            #pretty_html = soup.prettify()
+            if layout_html != "":
+                with open(dist_file, "w") as f:
+                    f.write(str(layout_html))
+            # descriptionHTMLをファイルに出力
+            if description_html != "":
+                with open(desc_file, "w") as f:
+                    f.write(str(description_html))
         except Exception as e:
             print(f"Error generating HTML for {src_file}: {e}")
             traceback.print_exc()
@@ -94,6 +102,28 @@ def init_command(path):
     print(f"  - Created directory: {dist_path}")
     print(f"  - Created file: {config_path}")
 
+def generate_html_file(src_file, output_file, mukurol):
+    """
+    指定のソースファイルからHTMLファイルを生成します。
+    """
+    try:
+        with open(src_file, "r") as f:
+            mukurol_text = f.read()
+        layout_html, description_html = mukurol.generate_html(mukurol_text)
+        if layout_html != "":
+            with open(output_file, "w") as f:
+                f.write(str(layout_html))
+        # descriptionファイル出力
+        desc_file = output_file.replace(".html", ".md.html")
+        if description_html != "":
+            print(f"Description HTML: {description_html}")
+            with open(desc_file, "w") as f:
+                f.write(str(description_html))
+        print(f"Generated HTML from {src_file} to {output_file}")
+    except Exception as e:
+        print(f"Error generating HTML for {src_file}: {e}")
+        traceback.print_exc()
+
 def generate_command(input_file=None, output_file=None):
     """
     指定のソースファイルから、出力先ファイルにHTMLファイルを作成します。
@@ -109,16 +139,7 @@ def generate_command(input_file=None, output_file=None):
             base_name = os.path.basename(src_file).replace(".mkl", ".html")
             output_file = os.path.join(DEFAULT_DIST_DIR, base_name)
 
-        try:
-            with open(src_file, "r") as f:
-                mukurol_text = f.read()
-            html, _ = mukurol.generate_html(mukurol_text)
-            with open(output_file, "w") as f:
-                f.write(str(html))
-            print(f"Generated HTML from {src_file} to {output_file}")
-        except Exception as e:
-            print(f"Error generating HTML for {src_file}: {e}")
-            traceback.print_exc()
+        generate_html_file(src_file, output_file, mukurol)
 
     else:
         # srcディレクトリのファイルを全て処理
@@ -137,16 +158,7 @@ def generate_command(input_file=None, output_file=None):
                 base_name = filename.replace(".mkl", ".html")
                 dist_file = os.path.join(dist_dir, base_name)
 
-                try:
-                    with open(src_file, "r") as f:
-                        mukurol_text = f.read()
-                    html, description = mukurol.generate_html(mukurol_text)
-                    with open(dist_file, "w") as f:
-                        f.write(str(html))
-                    print(f"Generated HTML from {src_file} to {dist_file}")
-                except Exception as e:
-                    print(f"Error generating HTML for {src_file}: {e}")
-                    traceback.print_exc()
+                generate_html_file(src_file, dist_file, mukurol)
     
 
 def serve_command(watch=False, port=DEFAULT_PORT):
