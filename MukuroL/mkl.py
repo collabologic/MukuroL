@@ -60,18 +60,17 @@ class MKLFileHandler(FileSystemEventHandler):
 
     def generate_html(self, src_file):
         # ファイル名から出力ファイル名を決定
-        base_name = os.path.basename(src_file).replace(".mkl", ".html")
+        base_name = src_file.replace("src/", "").replace(".mkl", ".html")
         dist_file = os.path.join(self.dist_dir, base_name)
+        os.makedirs(os.path.dirname(dist_file), exist_ok=True)
+        print(f"Generating HTML from {src_file} to {dist_file}")
         # descriptionファイル名
         desc_file = dist_file.replace(".html", ".md.html")
-
         try:
             with open(src_file, "r") as f:
                 mukurol_text = f.read()
             layout_html, description_html = self.mukurol.generate_html(mukurol_text)
             # レイアウトHTMLをファイルに出力
-            #soup = BeautifulSoup(layout_html, 'html.parser')
-            #pretty_html = soup.prettify()
             if layout_html != "":
                 with open(dist_file, "w") as f:
                     f.write(str(layout_html))
@@ -82,6 +81,17 @@ class MKLFileHandler(FileSystemEventHandler):
         except Exception as e:
             print(f"Error generating HTML for {src_file}: {e}")
             traceback.print_exc()
+
+def get_all_files(directory):
+    """
+    指定されたディレクトリ内のすべてのファイル（サブディレクトリを含む）を取得します。
+    """
+    file_list = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_list.append(file_path)
+    return file_list
 
 def init_command(path):
     """
@@ -107,6 +117,10 @@ def generate_html_file(src_file, output_file, mukurol):
     指定のソースファイルからHTMLファイルを生成します。
     """
     try:
+        # 出力先のディレクトリが存在しない場合は作成
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        print(f"Generating HTML from {src_file} to {output_file}")
+
         with open(src_file, "r") as f:
             mukurol_text = f.read()
         layout_html, description_html = mukurol.generate_html(mukurol_text)
@@ -149,14 +163,13 @@ def generate_command(input_file=None, output_file=None):
         if not os.path.exists(src_dir):
             print(f"Error: Source directory '{src_dir}' not found.")
             return
-
-        os.makedirs(dist_dir, exist_ok=True)
-
-        for filename in os.listdir(src_dir):
+        mkl_files = [f.replace("src/",'') for f in get_all_files(src_dir) if f.endswith(".mkl")]
+        for filename in mkl_files:
             if filename.endswith(".mkl"):
                 src_file = os.path.join(src_dir, filename)
                 base_name = filename.replace(".mkl", ".html")
                 dist_file = os.path.join(dist_dir, base_name)
+                os.makedirs(os.path.dirname(dist_file), exist_ok=True)
 
                 generate_html_file(src_file, dist_file, mukurol)
     
@@ -178,7 +191,9 @@ def serve_command(watch=False, port=DEFAULT_PORT):
     mukurol = MukuroL()  # MukuroLクラスのインスタンスを作成
 
     # 初期HTMLファイルを生成
-    for filename in os.listdir(src_dir):
+    mkl_files = [f.replace("src/",'') for f in get_all_files(src_dir) if f.endswith(".mkl")]
+    for filename in mkl_files:
+        print(f"Generating initial HTML from {filename}!!!")
         if filename.endswith(".mkl"):
             src_file = os.path.join(src_dir, filename)
             MKLFileHandler(src_dir, dist_dir, mukurol).generate_html(src_file)
