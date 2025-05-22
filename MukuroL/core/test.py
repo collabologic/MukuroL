@@ -9,14 +9,6 @@ from converter import convert
 from renderer import Renderer
 
 text = """\
-parts
-    greeting 
-        box label:greeting text:こんにちは
-            本日は良い天気ですね
-            明日は雨だそうです。
-    farewell
-        box label:farewell text:さようなら
-            また明日お会いしましょう
 page text:サンプルページ
     grid size:full tile:10x10
         box label:Header gsize:10x2 text:ここにヘッダーが入ります
@@ -26,8 +18,6 @@ page text:サンプルページ
                 box label:Form text:ここに入力フォームが入ります
                     フォームは部品をテンプレート化した方が良いかもしれません
                 box label:Preview text:入力結果がプレビューされます
-            ref greeting
-            ref farewell
         box label:Footer gsize:10x1 text:フッターです
 """
 
@@ -38,21 +28,19 @@ stack_json = json.dumps(
 )
 #print(stack_json)
 
-parts, page = divide(tree)
+page = divide(tree)
 if page:
     print("page")
     print(json.dumps(
         page.to_dict(),
         ensure_ascii=False, indent=4
     ))
-print("parts")
 print(json.dumps(
-    [p.to_dict() for p in parts],
     ensure_ascii=False, indent=4
 ))
 
 print("linking")
-linked_page = linking(page, parts)
+linked_page = linking(page)
 print(json.dumps(
     linked_page.to_dict(),
     ensure_ascii=False, indent=4

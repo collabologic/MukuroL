@@ -1,14 +1,6 @@
 from core.mukurol import MukuroL
 
 text = """\
-parts
-    greeting 
-        box label:greeting text:こんにちは
-            本日は良い天気ですね
-            明日は雨だそうです。
-    farewell
-        box label:farewell text:さようなら
-            また明日お会いしましょう
 page text:サンプルページ
     grid size:full tile:10x10
         box label:Header gsize:10x2 text:ここにヘッダーが入ります
