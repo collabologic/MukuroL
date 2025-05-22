@@ -64,20 +64,15 @@ class MKLFileHandler(FileSystemEventHandler):
         dist_file = os.path.join(self.dist_dir, base_name)
         os.makedirs(os.path.dirname(dist_file), exist_ok=True)
         print(f"Generating HTML from {src_file} to {dist_file}")
-        # descriptionファイル名
-        desc_file = dist_file.replace(".html", ".md.html")
+       
         try:
             with open(src_file, "r") as f:
                 mukurol_text = f.read()
-            layout_html, description_html = self.mukurol.generate_html(mukurol_text)
+            layout_html = self.mukurol.generate_html(mukurol_text)
             # レイアウトHTMLをファイルに出力
             if layout_html != "":
                 with open(dist_file, "w") as f:
                     f.write(str(layout_html))
-            # descriptionHTMLをファイルに出力
-            if description_html != "":
-                with open(desc_file, "w") as f:
-                    f.write(str(description_html))
         except Exception as e:
             print(f"Error generating HTML for {src_file}: {e}")
             traceback.print_exc()
@@ -123,16 +118,10 @@ def generate_html_file(src_file, output_file, mukurol):
 
         with open(src_file, "r") as f:
             mukurol_text = f.read()
-        layout_html, description_html = mukurol.generate_html(mukurol_text)
+        layout_html = mukurol.generate_html(mukurol_text)
         if layout_html != "":
             with open(output_file, "w") as f:
                 f.write(str(layout_html))
-        # descriptionファイル出力
-        desc_file = output_file.replace(".html", ".md.html")
-        if description_html != "":
-            print(f"Description HTML: {description_html}")
-            with open(desc_file, "w") as f:
-                f.write(str(description_html))
         print(f"Generated HTML from {src_file} to {output_file}")
     except Exception as e:
         print(f"Error generating HTML for {src_file}: {e}")
@@ -153,26 +142,35 @@ def generate_command(input_file=None, output_file=None):
             base_name = os.path.basename(src_file).replace(".mkl", ".html")
             output_file = os.path.join(DEFAULT_DIST_DIR, base_name)
 
-        generate_html_file(src_file, output_file, mukurol)
+        process_single_file(src_file, output_file, mukurol)
 
     else:
         # srcディレクトリのファイルを全て処理
-        src_dir = DEFAULT_SRC_DIR
-        dist_dir = DEFAULT_DIST_DIR
+        process_all_files(DEFAULT_SRC_DIR, DEFAULT_DIST_DIR, mukurol)
 
-        if not os.path.exists(src_dir):
-            print(f"Error: Source directory '{src_dir}' not found.")
-            return
-        mkl_files = [f.replace("src/",'') for f in get_all_files(src_dir) if f.endswith(".mkl")]
-        for filename in mkl_files:
-            if filename.endswith(".mkl"):
-                src_file = os.path.join(src_dir, filename)
-                base_name = filename.replace(".mkl", ".html")
-                dist_file = os.path.join(dist_dir, base_name)
-                os.makedirs(os.path.dirname(dist_file), exist_ok=True)
+def process_single_file(src_file, output_file, mukurol):
+    """
+    単一のMKLファイルを処理してHTMLを生成します。
+    """
+    generate_html_file(src_file, output_file, mukurol)
 
-                generate_html_file(src_file, dist_file, mukurol)
-    
+def process_all_files(src_dir, dist_dir, mukurol):
+    """
+    srcディレクトリ以下のすべてのMKLファイルを処理してHTMLを生成します。
+    """
+    if not os.path.exists(src_dir):
+        print(f"Error: Source directory '{src_dir}' not found.")
+        return
+
+    mkl_files = [f.replace("src/", '') for f in get_all_files(src_dir) if f.endswith(".mkl")]
+
+    for filename in mkl_files:
+        src_file = os.path.join(src_dir, filename)
+        base_name = filename.replace(".mkl", ".html")
+        dist_file = os.path.join(dist_dir, base_name)
+        os.makedirs(os.path.dirname(dist_file), exist_ok=True)
+
+        process_single_file(src_file, dist_file, mukurol)
 
 def serve_command(watch=False, port=DEFAULT_PORT):
     """
@@ -198,14 +196,16 @@ def serve_command(watch=False, port=DEFAULT_PORT):
             src_file = os.path.join(src_dir, filename)
             MKLFileHandler(src_dir, dist_dir, mukurol).generate_html(src_file)
 
+    print("Starting HTTP server...")
     # HTTPサーバの設定
     handler = lambda *args, **kwargs: MKLHandler(*args, mukurol=mukurol, **kwargs)
 
     try:
         with socketserver.TCPServer(("", port), handler) as httpd:
-            print(f"Serving at port {port}")
+            print(f"HTTP server is running at http://localhost:{port}")
 
             if watch:
+                print("Starting file watcher...")
                 # ファイル監視の設定
                 event_handler = MKLFileHandler(src_dir, dist_dir, mukurol)
                 observer = Observer()
@@ -221,6 +221,7 @@ def serve_command(watch=False, port=DEFAULT_PORT):
                 thread.start()
 
                 # ブラウザを開く
+                print(f"Opening browser at http://localhost:{port}/sample.html")
                 webbrowser.open(f"http://localhost:{port}/sample.html")  # sample.htmlをデフォルトで開く
 
                 try:
@@ -230,9 +231,11 @@ def serve_command(watch=False, port=DEFAULT_PORT):
                     observer.stop()
                 observer.join()
             else:
+                print("File watcher is disabled. Serving files only.")
                 httpd.serve_forever()
 
                 # ブラウザを開く
+                print(f"Opening browser at http://localhost:{port}/sample.html")
                 webbrowser.open(f"http://localhost:{port}/sample.html")  # sample.htmlをデフォルトで開く
 
     except OSError as e:

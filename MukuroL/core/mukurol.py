@@ -1,7 +1,7 @@
 from jinja2 import Template
 import markdown
 from . import basic_tmpls
-from .linker import divide, linking
+from .linker import divide
 from .tokenizer import parse_indented_text
 from .parser import parser
 from .converter import convert
@@ -22,22 +22,15 @@ class MukuroL:
 
     def generate_html(self, mukurol_text):
         tree = parse_indented_text(mukurol_text)
-        parts, page, description = divide(tree)
+        page= divide(tree)
         # レイアウトHTMLの生成
-        linked_page = linking(page, parts)
-        p = parser(linked_page)
+        p = parser(page)
         parsed = p.parse()
         converted = convert(parsed)
         r = Renderer(converted)
         rendered = r.render()
         lines = [line for line in rendered.splitlines() if line.strip()]
         layout =  "\n".join(lines)
-        
-        # descriptionHTMLの生成（配下をmarkdownとして扱い生成）
-        if description is None:
-            description_html = ""
-        else:
-            description_html = markdown.markdown(description)
-            print(f"Description HTML: {description_html}")
-        return layout, description_html
+
+        return layout
 
