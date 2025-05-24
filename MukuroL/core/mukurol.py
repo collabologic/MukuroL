@@ -1,7 +1,6 @@
 from jinja2 import Template
 import markdown
 from . import basic_tmpls
-from .linker import divide
 from .tokenizer import parse_indented_text
 from .parser import parser
 from .converter import convert
@@ -22,7 +21,7 @@ class MukuroL:
 
     def generate_html(self, mukurol_text):
         tree = parse_indented_text(mukurol_text)
-        page= divide(tree)
+        page = tree.children[0]
         # レイアウトHTMLの生成
         p = parser(page)
         parsed = p.parse()

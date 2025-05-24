@@ -1,8 +1,6 @@
-
 # 以下はテスト
 import json
 
-from linker import divide, linking
 from tokenizer import parse_indented_text
 from parser import parser
 from converter import convert
@@ -28,19 +26,13 @@ stack_json = json.dumps(
 )
 #print(stack_json)
 
-page = divide(tree)
-if page:
-    print("page")
-    print(json.dumps(
-        page.to_dict(),
-        ensure_ascii=False, indent=4
-    ))
+page = None
 print(json.dumps(
     ensure_ascii=False, indent=4
 ))
 
 print("linking")
-linked_page = linking(page)
+linked_page = None
 print(json.dumps(
     linked_page.to_dict(),
     ensure_ascii=False, indent=4

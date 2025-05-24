@@ -3,9 +3,6 @@ import os
 import shutil
 import argparse
 import yaml
-import http.server
-import socketserver
-import webbrowser
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -19,32 +16,6 @@ DEFAULT_SRC_DIR = "src"
 DEFAULT_DIST_DIR = "dist"
 DEFAULT_CONFIG_FILE = "mkl.config.yml"
 DEFAULT_PORT = 6961
-
-class MKLHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, mukurol=None, **kwargs):
-        self.mukurol = mukurol
-        super().__init__(*args, directory=DEFAULT_DIST_DIR, **kwargs)
-
-    def do_GET(self):
-        print(f"Request for: {self.path}")
-        # リクエストされたファイルがdistディレクトリにあるか確認
-        filepath = os.path.join(DEFAULT_DIST_DIR, self.path.lstrip("/"))
-        if os.path.exists(filepath):
-            # ファイルを読み込む
-            with open(filepath, "r") as f:
-                html = f.read()
-
-            # HTMLをレスポンスとして返す
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(html.encode())
-        else:
-            # 404エラーを返す
-            self.send_response(404)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"<html><body><h1>404 Not Found</h1></body></html>")
 
 class MKLFileHandler(FileSystemEventHandler):
     def __init__(self, src_dir, dist_dir, mukurol):
@@ -172,10 +143,9 @@ def process_all_files(src_dir, dist_dir, mukurol):
 
         process_single_file(src_file, dist_file, mukurol)
 
-def serve_command(watch=False, port=DEFAULT_PORT):
+def watch_command():
     """
-    ビルドインサーバを起動し、ブラウザを開いて指定ポートにアクセスさせます。
-    src内のmklファイルを監視し、更新があった場合は、そのmklファイルからHTMLを生成し、ブラウザに表示します。
+    src内のmklファイルを監視し、更新があった場合は、そのmklファイルからHTMLを生成します。
     """
     src_dir = DEFAULT_SRC_DIR
     dist_dir = DEFAULT_DIST_DIR
@@ -196,52 +166,19 @@ def serve_command(watch=False, port=DEFAULT_PORT):
             src_file = os.path.join(src_dir, filename)
             MKLFileHandler(src_dir, dist_dir, mukurol).generate_html(src_file)
 
-    print("Starting HTTP server...")
-    # HTTPサーバの設定
-    handler = lambda *args, **kwargs: MKLHandler(*args, mukurol=mukurol, **kwargs)
+    print("Starting file watcher...")
+    # ファイル監視の設定
+    event_handler = MKLFileHandler(src_dir, dist_dir, mukurol)
+    observer = Observer()
+    observer.schedule(event_handler, src_dir, recursive=True)
+    observer.start()
 
     try:
-        with socketserver.TCPServer(("", port), handler) as httpd:
-            print(f"HTTP server is running at http://localhost:{port}")
-
-            if watch:
-                print("Starting file watcher...")
-                # ファイル監視の設定
-                event_handler = MKLFileHandler(src_dir, dist_dir, mukurol)
-                observer = Observer()
-                observer.schedule(event_handler, src_dir, recursive=True)
-                observer.start()
-
-                # 別のスレッドでHTTPサーバーを起動
-                def serve_thread():
-                    httpd.serve_forever()
-
-                thread = threading.Thread(target=serve_thread)
-                thread.daemon = True  # メインスレッドが終了したら、このスレッドも終了
-                thread.start()
-
-                # ブラウザを開く
-                print(f"Opening browser at http://localhost:{port}/sample.html")
-                webbrowser.open(f"http://localhost:{port}/sample.html")  # sample.htmlをデフォルトで開く
-
-                try:
-                    while True:
-                        time.sleep(1)
-                except KeyboardInterrupt:
-                    observer.stop()
-                observer.join()
-            else:
-                print("File watcher is disabled. Serving files only.")
-                httpd.serve_forever()
-
-                # ブラウザを開く
-                print(f"Opening browser at http://localhost:{port}/sample.html")
-                webbrowser.open(f"http://localhost:{port}/sample.html")  # sample.htmlをデフォルトで開く
-
-    except OSError as e:
-        print(f"Error: Could not start server on port {port}. Port may be in use.")
-    except Exception as e:
-        print(f"Error starting server: {e}")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
 
 def main():
     parser = argparse.ArgumentParser(description="MukuroL CLI tool")
@@ -256,10 +193,8 @@ def main():
     generate_parser.add_argument("-i", "--input", dest="input_file", help="Path to the input MKL file")
     generate_parser.add_argument("-o", "--output", dest="output_file", help="Path to the output HTML file")
 
-    # serve コマンド
-    serve_parser = subparsers.add_parser("serve", help="Start a local development server")
-    serve_parser.add_argument("--watch", action="store_true", help="Watch for changes in the source directory and automatically regenerate HTML")
-    serve_parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"Port number to listen on (default: {DEFAULT_PORT})")
+    # watch コマンド
+    subparsers.add_parser("watch", help="Watch for changes in the source directory and automatically regenerate HTML")
 
     args = parser.parse_args()
 
@@ -267,8 +202,8 @@ def main():
         init_command(args.path)
     elif args.command == "generate":
         generate_command(args.input_file, args.output_file)
-    elif args.command == "serve":
-        serve_command(args.watch, args.port)
+    elif args.command == "watch":
+        watch_command()
     else:
         parser.print_help()
 
