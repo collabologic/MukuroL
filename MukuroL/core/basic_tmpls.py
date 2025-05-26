@@ -2,7 +2,7 @@ basic_tmpls = {
     "page":"""\
 <html>
   <header>
-    {% if data.text %}<title>{{data.text}}</title>{% endif %}
+    {% if data.title %}<title>{{data.title}}</title>{% endif %}
     <link rel="stylesheet" href="style.css">
     <meta charset="UTF-8">
   </header>
