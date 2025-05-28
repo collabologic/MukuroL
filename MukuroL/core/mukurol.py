@@ -1,5 +1,4 @@
 from jinja2 import Template
-import markdown
 from . import basic_tmpls
 from .tokenizer import parse_indented_text
 from .parser import parser

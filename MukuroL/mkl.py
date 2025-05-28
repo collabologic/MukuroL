@@ -6,7 +6,7 @@ import yaml
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from core.mukurol import MukuroL  # MukuroLクラスのインポート
+from .core.mukurol import MukuroL  # MukuroLクラスのインポート
 from bs4 import BeautifulSoup
 import threading
 import traceback
