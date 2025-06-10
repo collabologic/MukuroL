@@ -1,0 +1,71 @@
+/* 基本のボックス構造 */
+.box {
+    display: block;
+    padding: 4px;
+    border: 1px solid #777;
+    font-size: 9px;
+}
+.label {
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    font-size: 7px;
+}
+/* レイアウト関連 */
+.row { display: flex; flex-direction: row; gap: 8px; }
+.column { display: flex; flex-direction: column; gap: 8px; }
+
+/* 水平方向の配置 */
+.left { display: flex; justify-content: flex-start; }
+.right { display: flex; justify-content: flex-end; }
+.center { display: flex; justify-content: center; }
+
+/* 垂直方向の配置 */
+.top { display: flex; align-items: flex-start; }
+.bottom { display: flex; align-items: flex-end; }
+.middle { display: flex; align-items: center; }
+
+/* マージン */
+.mg { margin:5px; }
+.mg-sall { margin:2px; }
+.mg-large { margin:10px;}
+.mg-xlarge { margin:15px;}
+
+/* テキスト関連 */
+.txt { font-size: 16px; }
+.txt-small { font-size: 12px; }
+.txt-large { font-size: 20px; }
+.bold { font-weight: bold; }
+.italic { font-style: italic; }
+
+/* 入力フィールド */
+.field {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #aaa;
+}
+.button {
+  display: inline-block;
+  padding: 6px 12px;
+  border: none;
+  background-color: #0080ff;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+}
+.button:hover { background-color: #005bbb; }
+
+/* コンテンツの分割 */
+.container { max-width: 800px; margin: 0 auto; }
+.box-shadow { box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
+
+
+div::-webkit-scrollbar {
+  display: block;
+}
+div::-webkit-scrollbar-track {
+  background: #AAA;
+}
+div::-webkit-scrollbar-thumb {
+  background: #CCC;
+  border-radius: 6px; /* 角を少し丸くする */
+}

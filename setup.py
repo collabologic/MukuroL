@@ -8,7 +8,7 @@ with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as
 
 setup(
     name="MukuroL",
-    version="0.1.4",
+    version="0.1.5",
     author="collabologic",
     author_email="",  # 必要に応じてメールアドレスを追加してください
     description="MukuroL is a lightweight markup language, designed exclusively for wireframe creation using simple code.",

@@ -70,6 +70,15 @@ def init_command(path):
     os.makedirs(src_path, exist_ok=True)
     os.makedirs(dist_path, exist_ok=True)
 
+    # style.cssをdistディレクトリにコピー
+    src_css = os.path.join(os.path.dirname(__file__), "style.css")
+    dist_css = os.path.join(dist_path, "style.css")
+    if os.path.exists(src_css):
+        shutil.copy(src_css, dist_css)
+        print(f"  - Copied style.css to: {dist_css}")
+    else:
+        print(f"  - style.css not found at: {src_css}")
+
     with open(config_path, "w") as f:
         yaml.dump({}, f)  # 空のYAMLファイルを作成
 
